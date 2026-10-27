@@ -56,6 +56,7 @@ def world(tmp_path_factory) -> World:
         jwt_secret="test-secret-that-is-long-enough-for-hs256-signing",
         storage_dir=tmp_path_factory.mktemp("storage"),
         inline_ingestion=True,
+        seed_admin_email=None,  # never depend on a developer's personal .env
         # The hashing embedder isn't semantic: keep every permitted candidate so the
         # isolation tests see the widest possible retrieval.
         min_similarity=-1.0,

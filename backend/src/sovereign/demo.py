@@ -201,6 +201,15 @@ def seed(
         clara = member(mw, "clara", Role.EDITOR)
         david = member(mw, "david", Role.EMPLOYEE)
         member(mw, "felix", Role.EMPLOYEE)
+        if settings.seed_admin_email:
+            # A real person (from .env, never committed) who signs in with emailed codes.
+            admin = User(
+                email=settings.seed_admin_email.strip().lower(),
+                display_name=settings.seed_admin_name,
+            )
+            session.add(admin)
+            session.flush()
+            session.add(Membership(organization_id=mw.id, user_id=admin.id, role=Role.ADMIN))
         engineering = team(mw, "Engineering", [ben])
         hr = team(mw, "HR", [clara])
         finance = team(mw, "Finance", [david])

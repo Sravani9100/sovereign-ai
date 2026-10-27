@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
     login_code_minutes: int = 10
+    # The demo seed adds this person as a Musterwerk admin who signs in by email code.
+    seed_admin_email: str | None = None
+    seed_admin_name: str = "Admin"
 
     storage_dir: Path = Path("storage")
     max_upload_mb: int = 20

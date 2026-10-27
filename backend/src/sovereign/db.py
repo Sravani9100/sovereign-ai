@@ -37,7 +37,14 @@ def normalize_url(url: str) -> str:
 
 
 def make_engine(url: str) -> Engine:
-    return create_engine(normalize_url(url), pool_pre_ping=True, pool_recycle=300)
+    connect_args = {}
+    if "-pooler." in url:
+        # PgBouncer in transaction mode: a server-side prepared statement can land on a
+        # different server connection. Tenant settings are transaction-local, so they're fine.
+        connect_args["prepare_threshold"] = None
+    return create_engine(
+        normalize_url(url), pool_pre_ping=True, pool_recycle=300, connect_args=connect_args
+    )
 
 
 def make_sessionmaker(engine: Engine) -> sessionmaker[Session]:

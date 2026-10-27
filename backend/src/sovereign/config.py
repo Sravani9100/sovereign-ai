@@ -1,16 +1,27 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="SOVEREIGN_", env_file=(".env", "../.env"), extra="ignore"
+        env_prefix="SOVEREIGN_",
+        env_file=(".env", "../.env", ".env.local", "../.env.local"),
+        extra="ignore",
     )
 
-    database_url: str = "postgresql+psycopg://localhost/sovereign"
+    # DATABASE_URL is what Neon (and most hosts) provision.
+    database_url: str = Field(
+        default="postgresql+psycopg://localhost/sovereign",
+        validation_alias=AliasChoices("SOVEREIGN_DATABASE_URL", "DATABASE_URL"),
+    )
+    # Direct (non-pooled) connection for migrations. Falls back to database_url.
+    migration_database_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SOVEREIGN_MIGRATION_DATABASE_URL", "DATABASE_URL_UNPOOLED"),
+    )
     cors_origins: list[str] = ["http://localhost:3000"]
 
     # Sessions are signed JWTs in an httpOnly cookie. Permissions are not in the token:

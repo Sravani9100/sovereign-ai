@@ -185,7 +185,7 @@ def test_leaving_a_team_removes_access_on_the_next_question(as_user, world):
 
 
 def test_citations_must_point_at_retrieved_sources(as_user, world):
-    world.fake.respond = lambda system, messages: "Thirty days [1]. Also see [42]."
+    world.fake.respond = lambda system, messages: "Thirty days [1]. Also see [999]."
     try:
         answer = as_user("ben").ask("How much annual leave do I get?")
     finally:

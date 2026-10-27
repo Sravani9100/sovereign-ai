@@ -1,4 +1,5 @@
 .env
+.env.local
 .venv/
 __pycache__/
 *.pyc
@@ -9,3 +10,4 @@ storage/
 node_modules/
 .next/
 evals/results/run-*.json
+.neon

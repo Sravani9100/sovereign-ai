@@ -6,7 +6,13 @@ from sovereign.config import get_settings
 from sovereign.db import Base, normalize_url
 
 config = context.config
-url = config.attributes.get("database_url") or get_settings().database_url
+settings = get_settings()
+# Migrations need a direct connection (DDL and session state don't go through a pooler).
+url = (
+    config.attributes.get("database_url")
+    or settings.migration_database_url
+    or settings.database_url
+)
 
 
 def run_migrations_offline() -> None:

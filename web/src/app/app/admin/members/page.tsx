@@ -230,11 +230,12 @@ function AddMember({ onAdded }: { onAdded: () => void }) {
             ))}
           </select>
         </Field>
-        <Field label="Initial password (new users)">
+        <Field label="Password (optional)">
           <input className={inputClass} type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
         <div className="sm:col-span-2 lg:col-span-4">
           {error && <ErrorNotice message={error} />}
+          <p className="mt-1 text-xs text-muted">Without a password, they sign in with a code sent to their email.</p>
           <Button type="submit" className="mt-2">
             Add member
           </Button>

@@ -54,12 +54,11 @@ def add_member(body: MemberIn, c: AdminDep) -> MemberOut:
     session = c.session
     user = session.scalar(select(User).where(func.lower(User.email) == body.email.lower()))
     if user is None:
-        if not body.password:
-            raise ApiError(422, "password_required", "New users need an initial password")
+        # Without a password, the person signs in with an emailed code.
         user = User(
             email=body.email.lower(),
             display_name=body.display_name,
-            password_hash=hash_password(body.password),
+            password_hash=hash_password(body.password) if body.password else None,
         )
         session.add(user)
         session.flush()

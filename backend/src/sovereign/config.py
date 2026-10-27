@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,6 +30,15 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr = SecretStr("dev-only-secret-change-me-in-every-deployment")
     session_hours: int = 8
     cookie_secure: bool = False
+
+    # Email sign-in codes. "console" prints them to the API log (development only).
+    email_backend: Literal["console", "smtp"] = "console"
+    email_from: str = "SovereignAI <no-reply@localhost>"
+    smtp_host: str | None = None
+    smtp_port: int = 587  # 587 = STARTTLS, 465 = implicit TLS
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    login_code_minutes: int = 10
 
     storage_dir: Path = Path("storage")
     max_upload_mb: int = 20

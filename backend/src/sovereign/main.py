@@ -12,6 +12,7 @@ from sovereign.api import admin_routes, auth_routes, chat_routes, knowledge_rout
 from sovereign.api.deps import ApiError, Services
 from sovereign.config import Settings, get_settings
 from sovereign.db import make_engine, make_sessionmaker
+from sovereign.mail import Mailer, make_mailer
 from sovereign.storage import LocalStorage, Storage
 
 
@@ -22,6 +23,7 @@ def create_app(
     storage: Storage | None = None,
     embedder: Embedder | None = None,
     fake_model: FakeChatModel | None = None,
+    mailer: Mailer | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     logging.basicConfig(level=logging.INFO)
@@ -33,6 +35,7 @@ def create_app(
         storage=storage or LocalStorage(settings.storage_dir),
         embedder=embedder or FastEmbedEmbedder(settings.embedding_model),
         gateway=Gateway(settings, fake=fake_model),
+        mailer=mailer or make_mailer(settings),
     )
 
     app.add_middleware(

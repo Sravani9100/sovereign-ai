@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { LoginForm } from "@/components/LoginForm";
 import { Logo } from "@/components/Logo";
-import { Button, ErrorNotice, Field, inputClass } from "@/components/ui";
+import { ErrorNotice } from "@/components/ui";
 import { api, errorMessage, json, setActiveOrg } from "@/lib/api";
 import type { Me } from "@/lib/types";
 
@@ -22,18 +23,20 @@ const DEMO_USERS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function signIn(address: string, secret: string) {
+  function enter(me: Me) {
+    setActiveOrg(me.organizations[0]?.organization_id ?? null);
+    router.push(me.organizations.length ? "/app/chat" : "/onboarding");
+  }
+
+  // Demo addresses (.example) can't receive email, so demo buttons use the shared password.
+  async function signInAsDemo(email: string) {
     setBusy(true);
     setError(null);
     try {
-      const me = await api<Me>("/auth/login", { method: "POST", body: json({ email: address, password: secret }) });
-      setActiveOrg(me.organizations[0]?.organization_id ?? null);
-      router.push(me.organizations.length ? "/app/chat" : "/onboarding");
+      enter(await api<Me>("/auth/login", { method: "POST", body: json({ email, password: DEMO_PASSWORD }) }));
     } catch (e) {
       setError(errorMessage(e));
       setBusy(false);
@@ -54,24 +57,9 @@ export default function LoginPage() {
           without access. Confidential spaces never leave for external AI providers. Every answer cites its
           sources.
         </p>
-        <form
-          className="mt-8 space-y-4 rounded-xl border border-border bg-surface p-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            signIn(email, password);
-          }}
-        >
-          <Field label="Email">
-            <input className={inputClass} type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </Field>
-          <Field label="Password">
-            <input className={inputClass} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </Field>
-          {error && <ErrorNotice message={error} />}
-          <Button type="submit" disabled={busy} className="w-full">
-            {busy ? "Signing in…" : "Sign in"}
-          </Button>
-        </form>
+        <div className="mt-8">
+          <LoginForm onSignedIn={enter} />
+        </div>
       </div>
 
       <div>
@@ -85,7 +73,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => signIn(user.email, DEMO_PASSWORD)}
+                onClick={() => signInAsDemo(user.email)}
                 className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-left transition hover:border-accent disabled:opacity-50"
               >
                 <div className="flex items-baseline justify-between gap-3">
@@ -97,6 +85,11 @@ export default function LoginPage() {
             </li>
           ))}
         </ul>
+        {error && (
+          <div className="mt-3">
+            <ErrorNotice message={error} />
+          </div>
+        )}
       </div>
     </main>
   );

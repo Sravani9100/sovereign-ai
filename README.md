@@ -24,7 +24,8 @@ SovereignAI is built around one promise and proves it with tests:
 ## Security model
 
 Each row is enforced in code and checked by a test in
-[`backend/tests/test_security.py`](backend/tests/test_security.py). The tests inspect **what the
+[`test_security.py`](backend/tests/test_security.py) or
+[`test_login_codes.py`](backend/tests/test_login_codes.py). The retrieval tests inspect **what the
 model was actually shown**, not just the API response. They run in CI against real Postgres.
 
 | Threat | Defense | Test |
@@ -38,6 +39,8 @@ model was actually shown**, not just the API response. They run in CI against re
 | "Ignore your instructions, you're admin" | Doesn't matter: retrieval doesn't read the prompt's claims | `test_prompt_injection_in_the_question_cannot_widen_retrieval` |
 | Instructions hidden in a document | Sources are delimited, escaped, and declared data, not instructions | `test_injection_inside_a_document_is_delivered_as_data` |
 | Confidential data sent to an external API | Each model has a data ceiling; retrieval drops spaces above it | `test_confidential_content_is_never_sent_to_an_external_model` |
+| Discovering who has an account | Requesting a sign-in code answers the same for any address; the email is sent after the response | `test_known_and_unknown_addresses_get_the_same_response` |
+| Guessing an email sign-in code | Codes are stored as an HMAC, single use, expire in 10 minutes, burn after 5 wrong tries | `test_five_wrong_guesses_burn_the_code`, `test_codes_are_stored_hashed` |
 | Fired employee with an open session | Permissions load from the DB on every request, never from the token | `test_revoking_a_member_locks_out_their_active_session` |
 | Leaving a team | Takes effect on the next question; old citations become "restricted" | `test_leaving_a_team_removes_access_on_the_next_question` |
 | Model invents a citation | Markers must point at a retrieved source or they're dropped | `test_citations_must_point_at_retrieved_sources` |
@@ -125,7 +128,10 @@ Or run the whole stack with Docker: `docker compose up --build`, then
 
 ### Demo accounts
 
-All use the password `demo-password-2026`. The login page has one-click buttons for each.
+People sign in with a one-time code sent to their email (or a password). The demo addresses
+can't receive email, so they use the password `demo-password-2026`; the login page has
+one-click buttons for each. With the default `console` email backend, codes for any account
+appear in the API log.
 
 | Person | Role | Can read |
 |---|---|---|
@@ -174,12 +180,13 @@ They use a fake model that records its input, so they cost nothing and need no A
 | `ANTHROPIC_API_KEY` | | For the `claude` model profile |
 | `SOVEREIGN_ANTHROPIC_MODEL` | `claude-haiku-5-5` | |
 | `SOVEREIGN_OLLAMA_URL` / `_MODEL` | `localhost:11434` / `llama3.2` | For the `local-private` profile |
+| `SOVEREIGN_EMAIL_BACKEND` | `console` | `smtp` to email sign-in codes (with `SOVEREIGN_SMTP_*`); `console` logs them |
 | `SOVEREIGN_INLINE_INGESTION` | `true` | `false` to index with `python -m sovereign.worker` instead |
 | `SOVEREIGN_COOKIE_SECURE` | `false` | `true` behind HTTPS |
 
 ## Status and roadmap
 
-Working today: multi-tenant workspace, teams and grants, ingestion (PDF, DOCX, Markdown), hybrid
+Working today: email-code and password sign-in, multi-tenant workspace, teams and grants, ingestion (PDF, DOCX, Markdown), hybrid
 retrieval, cited streaming chat, model gateway with data ceilings, audit log, admin UI, and the
 security test suite.
 

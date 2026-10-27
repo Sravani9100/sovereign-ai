@@ -13,6 +13,7 @@ from sovereign.ai.gateway import FakeChatModel
 from sovereign.config import Settings
 from sovereign.db import make_engine, make_sessionmaker, system_session
 from sovereign.demo import PASSWORD, USERS, DemoIds, reset, seed
+from sovereign.mail import FakeMailer
 from sovereign.main import create_app
 from sovereign.models import Classification, ModelProfile, Provider
 from sovereign.storage import LocalStorage
@@ -38,6 +39,7 @@ class World:
     ids: DemoIds
     fake: FakeChatModel
     sessions: object
+    mailer: FakeMailer
 
 
 @pytest.fixture(scope="session")
@@ -92,9 +94,10 @@ def world(tmp_path_factory) -> World:
         session.commit()
 
     fake = FakeChatModel(respond=lambda system, messages: "Here is what I found [1].")
+    mailer = FakeMailer()
     app = create_app(settings, sessions=sessions, storage=storage, embedder=embedder,
-                     fake_model=fake)  # fmt: skip
-    return World(app=app, ids=ids, fake=fake, sessions=sessions)
+                     fake_model=fake, mailer=mailer)  # fmt: skip
+    return World(app=app, ids=ids, fake=fake, sessions=sessions, mailer=mailer)
 
 
 class UserClient:

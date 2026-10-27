@@ -128,6 +128,21 @@ class User(Base):
     created_at: Mapped[datetime] = _created()
 
 
+class LoginCode(Base):
+    """A one-time sign-in code sent by email. Only an HMAC of the code is stored."""
+
+    __tablename__ = "login_codes"
+    __table_args__ = (Index("ix_login_codes_email_created", "email", "created_at"),)
+
+    id: Mapped[uuid.UUID] = _id()
+    email: Mapped[str] = mapped_column(String(320))
+    code_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(default=0)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _created()
+
+
 class Membership(Base):
     __tablename__ = "memberships"
     __table_args__ = (UniqueConstraint("organization_id", "user_id"),)

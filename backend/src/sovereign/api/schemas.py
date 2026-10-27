@@ -28,6 +28,15 @@ class LoginIn(BaseModel):
     password: str
 
 
+class CodeRequestIn(BaseModel):
+    email: str = Field(max_length=320)
+
+
+class CodeVerifyIn(BaseModel):
+    email: str = Field(max_length=320)
+    code: str = Field(pattern=r"^\s*\d{6}\s*$")
+
+
 class OrgMembershipOut(Out):
     organization_id: uuid.UUID
     name: str
@@ -51,7 +60,7 @@ class MemberIn(BaseModel):
     email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=320)
     display_name: str = Field(min_length=1, max_length=200)
     role: Role = Role.EMPLOYEE
-    # Demo-grade onboarding: an admin sets the first password. Invitations come later.
+    # Optional: without one, the person signs in with an emailed code.
     password: str | None = Field(default=None, min_length=8)
 
 

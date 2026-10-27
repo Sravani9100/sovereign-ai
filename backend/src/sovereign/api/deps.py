@@ -11,6 +11,7 @@ from sovereign.ai.gateway import Gateway
 from sovereign.auth import COOKIE_NAME, read_token
 from sovereign.config import Settings
 from sovereign.db import tenant_session
+from sovereign.mail import Mailer
 from sovereign.permissions import Principal, load_principal
 from sovereign.storage import Storage
 
@@ -32,6 +33,7 @@ class Services:
     storage: Storage
     embedder: Embedder
     gateway: Gateway
+    mailer: Mailer
 
 
 def services(request: Request) -> Services:

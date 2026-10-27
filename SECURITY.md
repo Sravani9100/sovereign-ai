@@ -19,7 +19,9 @@ against a real Postgres database.
 
 - Malware scanning of uploads (files are type-checked from their bytes, size-limited, and
   parsed with zip-bomb limits, but not virus-scanned).
-- OIDC single sign-on. Login is email and password (argon2id) behind an interface an OIDC
-  provider can replace.
+- OIDC single sign-on. Login is by one-time email code or password (argon2id), behind an
+  interface an OIDC provider can replace. Email codes are 6 digits, stored as an HMAC, single
+  use, expire after 10 minutes, burn after 5 wrong guesses, and are limited to 3 per address
+  per 15 minutes; the request endpoint answers identically for unknown addresses.
 - Rate limiting and per-tenant token budgets.
 - Encryption of provider API keys at rest (keys come from the environment, not the database).

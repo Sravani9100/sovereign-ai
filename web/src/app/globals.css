@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6f7f6;
+  --surface: #ffffff;
+  --surface-2: #eff1f0;
+  --border: #dfe3e1;
+  --text: #17201d;
+  --muted: #64706b;
+  --accent: #0f766e;
+  --accent-soft: #e3f4f1;
+  --ok: #15803d;
+  --ok-soft: #e7f6ec;
+  --danger: #c2410c;
+  --danger-soft: #fdeee6;
+  --warn: #a16207;
+  --warn-soft: #fbf3dc;
+  --secret: #7c3aed;
+  --secret-soft: #f1ebfe;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1312;
+    --surface: #161b19;
+    --surface-2: #1e2522;
+    --border: #2a332f;
+    --text: #e8eeeb;
+    --muted: #94a19b;
+    --accent: #2dd4bf;
+    --accent-soft: #11302c;
+    --ok: #4ade80;
+    --ok-soft: #12301d;
+    --danger: #fb923c;
+    --danger-soft: #3a1f12;
+    --warn: #facc15;
+    --warn-soft: #36300e;
+    --secret: #a78bfa;
+    --secret-soft: #2a2145;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-secret: var(--secret);
+  --color-secret-soft: var(--secret-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Model-written answers. */
+.markdown > * + * {
+  margin-top: 0.6em;
+}
+.markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.markdown ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+.markdown ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+.markdown li + li {
+  margin-top: 0.25em;
+}
+.markdown strong {
+  font-weight: 600;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-weight: 600;
+}

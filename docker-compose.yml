@@ -1,0 +1,55 @@
+# Self-hosted stack: Postgres + pgvector, API, dashboard. Optional local models via Ollama.
+#   docker compose up --build
+#   docker compose exec api python ../demo-data/seed.py      # load the demo companies
+#   docker compose --profile local-llm up                    # also run Ollama
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: sovereign
+      POSTGRES_PASSWORD: sovereign
+      POSTGRES_DB: sovereign
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sovereign"]
+      interval: 2s
+      retries: 30
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://sovereign:sovereign@db/sovereign
+      SOVEREIGN_JWT_SECRET: ${SOVEREIGN_JWT_SECRET:?set SOVEREIGN_JWT_SECRET in .env}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SOVEREIGN_ANTHROPIC_MODEL: ${SOVEREIGN_ANTHROPIC_MODEL:-claude-haiku-5-5}
+      SOVEREIGN_OLLAMA_URL: http://ollama:11434
+      SOVEREIGN_CORS_ORIGINS: '["http://localhost:3000"]'
+    volumes:
+      - data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: web
+      args:
+        API_URL: http://api:8100
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: ["local-llm"]
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  db:
+  data:
+  ollama:

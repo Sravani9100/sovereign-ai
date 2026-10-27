@@ -54,6 +54,13 @@ def test_no_sources_says_so_and_history_is_kept():
     assert "No documents this user can access matched" in messages[-1]["content"]
 
 
+def test_history_answers_lose_their_citation_markers():
+    history = [("user", "How do I fix E104? [1]"), ("assistant", "Check the cable [1][2].")]
+    messages = build_messages("And E103?", [], history)
+    assert messages[0]["content"] == "How do I fix E104? [1]"  # the user's own text is untouched
+    assert messages[1]["content"] == "Check the cable ."
+
+
 def test_location_labels():
     assert location_label({"page": 3}) == "Page 3"
     assert location_label({"section": "4.2 Annual Leave", "path": ["x"]}) == "4.2 Annual Leave"

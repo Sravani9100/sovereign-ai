@@ -1,0 +1,44 @@
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="SOVEREIGN_", env_file=(".env", "../.env"), extra="ignore"
+    )
+
+    database_url: str = "postgresql+psycopg://localhost/sovereign"
+    cors_origins: list[str] = ["http://localhost:3000"]
+
+    # Sessions are signed JWTs in an httpOnly cookie. Permissions are not in the token:
+    # they are loaded from the database on every request, so revocation is immediate.
+    jwt_secret: SecretStr = SecretStr("dev-only-secret-change-me-in-every-deployment")
+    session_hours: int = 8
+    cookie_secure: bool = False
+
+    storage_dir: Path = Path("storage")
+    max_upload_mb: int = 20
+    # Run ingestion inside the API process after upload instead of a separate worker.
+    inline_ingestion: bool = True
+
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_dims: int = 384
+
+    retrieval_k: int = 8
+    retrieval_candidates: int = 30
+    # Vector hits below this cosine similarity are dropped; keyword hits are always kept.
+    min_similarity: float = 0.55
+
+    anthropic_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    anthropic_model: str = "claude-haiku-5-5"
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2"
+    llm_timeout_s: float = 120.0
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

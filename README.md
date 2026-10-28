@@ -126,6 +126,21 @@ npm run dev                                                  # http://localhost:
 Or run the whole stack with Docker: `docker compose up --build`, then
 `docker compose exec api python ../demo-data/seed.py`.
 
+### Deploying a public demo
+
+The reference setup is free: the API on Render (Frankfurt, via [`render.yaml`](render.yaml)), the
+dashboard on Vercel, and Postgres on Neon (Frankfurt).
+
+1. Create a Neon project in AWS Europe Central 1. Put its pooled and direct URLs in `.env.production`,
+   then load the schema and demo data from your machine:
+   `alembic upgrade head` and `python demo-data/seed.py` with those URLs set.
+2. Render: **New > Blueprint**, pick the repo, and fill in the secrets it asks for.
+3. Vercel: import the repo with **Root Directory** `web` and set `API_URL` to the Render URL.
+
+The blueprint turns on the public-demo guards: shared demo accounts are read-only
+(`SOVEREIGN_DEMO_READ_ONLY`), each person can ask 20 questions an hour, and the whole deployment
+stops calling the model after 300 questions a day, so a public link can't run up the API bill.
+
 ### Demo accounts
 
 People sign in with a one-time code sent to their email (or a password). The demo addresses
@@ -181,6 +196,9 @@ They use a fake model that records its input, so they cost nothing and need no A
 | `SOVEREIGN_ANTHROPIC_MODEL` | `claude-haiku-5-5` | |
 | `SOVEREIGN_OLLAMA_URL` / `_MODEL` | `localhost:11434` / `llama3.2` | For the `local-private` profile |
 | `SOVEREIGN_EMAIL_BACKEND` | `console` | `smtp` to email sign-in codes (with `SOVEREIGN_SMTP_*`); `console` logs them |
+| `SOVEREIGN_DEMO_READ_ONLY` | `false` | Shared demo accounts (`*.example`) can chat but not change data |
+| `SOVEREIGN_CHAT_MESSAGES_PER_HOUR` | `30` | Questions per person per rolling hour (`0` = unlimited) |
+| `SOVEREIGN_DAILY_MESSAGE_LIMIT` | `0` | Questions per UTC day across the deployment (`0` = unlimited) |
 | `SOVEREIGN_INLINE_INGESTION` | `true` | `false` to index with `python -m sovereign.worker` instead |
 | `SOVEREIGN_COOKIE_SECURE` | `false` | `true` behind HTTPS |
 

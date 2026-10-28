@@ -18,6 +18,7 @@ export interface Me {
   id: string;
   email: string;
   display_name: string;
+  read_only: boolean;
   organizations: OrgMembership[];
 }
 

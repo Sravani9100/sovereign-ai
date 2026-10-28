@@ -39,6 +39,18 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
     login_code_minutes: int = 10
+    # Public demo: accounts on these domains can chat but not change anything.
+    demo_read_only: bool = False
+    demo_email_domains: list[str] = [
+        "musterwerk.example",
+        "rheintech.example",
+        "consulting.example",
+    ]
+    # Spending guards. Per member per rolling hour, and across all tenants per UTC day
+    # (0 = unlimited). Every question is one model call.
+    chat_messages_per_hour: int = 30
+    daily_message_limit: int = 0
+
     # The demo seed adds this person as a Musterwerk admin who signs in by email code.
     seed_admin_email: str | None = None
     seed_admin_name: str = "Admin"
@@ -61,6 +73,12 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2"
     llm_timeout_s: float = 120.0
+
+
+def is_demo_account(email: str, settings: Settings) -> bool:
+    """A shared demo account that is read-only while demo_read_only is on."""
+    domain = email.rsplit("@", 1)[-1].lower()
+    return settings.demo_read_only and domain in settings.demo_email_domains
 
 
 @lru_cache

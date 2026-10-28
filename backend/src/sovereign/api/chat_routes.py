@@ -2,10 +2,11 @@ import json
 import time
 import uuid
 from collections.abc import Iterator
+from datetime import timedelta
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from sovereign import audit
@@ -20,7 +21,7 @@ from sovereign.api.schemas import (
     MessageIn,
     MessageOut,
 )
-from sovereign.db import tenant_session
+from sovereign.db import system_session, tenant_session
 from sovereign.models import (
     Conversation,
     Message,
@@ -157,6 +158,7 @@ def send_message(conversation_id: uuid.UUID, body: MessageIn, c: CtxDep) -> Stre
     """Answer a question. Streams server-sent events: status, sources, delta, done, error."""
     conversation = _own_conversation(c, conversation_id)
     profile = _profile(c.session, c.principal.organization_id, body.model_profile)
+    _check_limits(c)
     events = _answer(
         c.svc,
         c.principal,
@@ -170,6 +172,41 @@ def send_message(conversation_id: uuid.UUID, body: MessageIn, c: CtxDep) -> Stre
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+def _check_limits(c: Ctx) -> None:
+    """Spending guards, checked before any model call. Each question is one call."""
+    settings = c.svc.settings
+    now = utcnow()
+    asked_last_hour = c.session.scalar(
+        select(func.count(Message.id))
+        .join(Conversation, Conversation.id == Message.conversation_id)
+        .where(
+            Conversation.owner_membership_id == c.principal.membership_id,
+            Message.role == MessageRole.USER,
+            Message.created_at > now - timedelta(hours=1),
+        )
+    )
+    if settings.chat_messages_per_hour and asked_last_hour >= settings.chat_messages_per_hour:
+        raise ApiError(
+            429,
+            "rate_limited",
+            f"You've asked {asked_last_hour} questions in the last hour. Please try again later.",
+        )
+    if settings.daily_message_limit:
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        with system_session(c.svc.sessions) as session:  # counts across all organizations
+            asked_today = session.scalar(
+                select(func.count(Message.id)).where(
+                    Message.role == MessageRole.USER, Message.created_at >= midnight
+                )
+            )
+        if asked_today >= settings.daily_message_limit:
+            raise ApiError(
+                429,
+                "daily_limit",
+                "This deployment has reached its daily question limit. Please try again tomorrow.",
+            )
 
 
 def _sse(event: str, data) -> str:

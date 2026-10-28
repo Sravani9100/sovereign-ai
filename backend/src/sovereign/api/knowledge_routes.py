@@ -6,7 +6,16 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from sovereign import audit
-from sovereign.api.deps import AdminDep, ApiError, Ctx, CtxDep, Services, not_found
+from sovereign.api.deps import (
+    AdminDep,
+    AdminWriteDep,
+    ApiError,
+    Ctx,
+    CtxDep,
+    Services,
+    WriteDep,
+    not_found,
+)
 from sovereign.api.schemas import (
     DocumentDetailOut,
     DocumentOut,
@@ -67,7 +76,7 @@ def list_spaces(c: CtxDep) -> list[SpaceOut]:
 
 
 @router.post("/knowledge/spaces", status_code=201)
-def create_space(body: SpaceIn, c: AdminDep) -> SpaceOut:
+def create_space(body: SpaceIn, c: AdminWriteDep) -> SpaceOut:
     space = KnowledgeSpace(organization_id=c.principal.organization_id, **body.model_dump())
     c.session.add(space)
     try:
@@ -102,7 +111,7 @@ def _space(c: Ctx, space_id: uuid.UUID) -> KnowledgeSpace:
 
 
 @router.patch("/knowledge/spaces/{space_id}")
-def update_space(space_id: uuid.UUID, body: SpacePatch, c: AdminDep) -> SpaceOut:
+def update_space(space_id: uuid.UUID, body: SpacePatch, c: AdminWriteDep) -> SpaceOut:
     space = _space(c, space_id)
     changes = body.model_dump(exclude_none=True)
     for field, value in changes.items():
@@ -162,7 +171,7 @@ def _grant_out(c: Ctx, grant: SpaceGrant) -> GrantOut:
 
 
 @router.post("/knowledge/spaces/{space_id}/grants", status_code=201)
-def add_grant(space_id: uuid.UUID, body: GrantIn, c: AdminDep) -> GrantOut:
+def add_grant(space_id: uuid.UUID, body: GrantIn, c: AdminWriteDep) -> GrantOut:
     space = _space(c, space_id)
     # The principal must belong to this organization: no granting to another tenant's team.
     if _principal_name(c, body.principal_type, body.principal_id) is None:
@@ -197,7 +206,7 @@ def add_grant(space_id: uuid.UUID, body: GrantIn, c: AdminDep) -> GrantOut:
 
 
 @router.delete("/knowledge/spaces/{space_id}/grants/{grant_id}", status_code=204)
-def remove_grant(space_id: uuid.UUID, grant_id: uuid.UUID, c: AdminDep) -> None:
+def remove_grant(space_id: uuid.UUID, grant_id: uuid.UUID, c: AdminWriteDep) -> None:
     space = _space(c, space_id)
     grant = c.session.get(SpaceGrant, grant_id)
     if grant is None or grant.space_id != space.id:
@@ -327,7 +336,7 @@ def _schedule_ingestion(tasks: BackgroundTasks, svc: Services) -> None:
 
 @router.post("/documents", status_code=201)
 async def upload_document(
-    c: CtxDep,
+    c: WriteDep,
     tasks: BackgroundTasks,
     space_id: Annotated[uuid.UUID, Form()],
     file: Annotated[UploadFile, File()],
@@ -368,7 +377,7 @@ async def upload_document(
 @router.post("/documents/{document_id}/versions", status_code=201)
 async def upload_version(
     document_id: uuid.UUID,
-    c: CtxDep,
+    c: WriteDep,
     tasks: BackgroundTasks,
     file: Annotated[UploadFile, File()],
 ) -> VersionOut:
@@ -391,7 +400,7 @@ async def upload_version(
 
 
 @router.delete("/documents/{document_id}", status_code=204)
-def delete_document(document_id: uuid.UUID, c: CtxDep) -> None:
+def delete_document(document_id: uuid.UUID, c: WriteDep) -> None:
     document = _readable_document(c, document_id)
     if document.space_id not in editable_space_ids(c.session, c.principal):
         raise ApiError(403, "forbidden", "You can read this document but not delete it")

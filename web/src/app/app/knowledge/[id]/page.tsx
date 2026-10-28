@@ -8,11 +8,13 @@ import { UploadForm } from "@/components/UploadForm";
 import { Button, Card, Empty, ErrorNotice, Table, Td, Th, VersionStatusBadge } from "@/components/ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { bytes, dateTime, fileType } from "@/lib/format";
+import { useSession } from "@/lib/session";
 import type { DocumentDetail } from "@/lib/types";
 
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { me } = useSession();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +117,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         </Table>
       </Card>
 
-      {doc.can_edit && (
+      {doc.can_edit && !me.read_only && (
         <div className="grid gap-6 md:grid-cols-2">
           <Card title="Upload a new version">
             <p className="mb-4 text-sm text-muted">

@@ -19,9 +19,11 @@ import {
 } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
+import { useSession } from "@/lib/session";
 import type { DocumentSummary, Space } from "@/lib/types";
 
 export default function KnowledgePage() {
+  const { me } = useSession();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [documents, setDocuments] = useState<DocumentSummary[] | null>(null);
   const [filter, setFilter] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function KnowledgePage() {
   }, [indexing, load]);
 
   const readable = spaces.filter((s) => s.can_read);
-  const editable = spaces.filter((s) => s.can_edit);
+  const editable = me.read_only ? [] : spaces.filter((s) => s.can_edit);
   const hidden = spaces.filter((s) => !s.can_read);
   const shown = documents?.filter((d) => !filter || d.space_id === filter) ?? [];
 

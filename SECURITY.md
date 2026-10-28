@@ -23,5 +23,6 @@ against a real Postgres database.
   interface an OIDC provider can replace. Email codes are 6 digits, stored as an HMAC, single
   use, expire after 10 minutes, burn after 5 wrong guesses, and are limited to 3 per address
   per 15 minutes; the request endpoint answers identically for unknown addresses.
-- Rate limiting and per-tenant token budgets.
+- Per-tenant token budgets. (Questions are limited per person per hour and per deployment per
+  day; there's no per-IP limit on the sign-in endpoints beyond the per-address code limit.)
 - Encryption of provider API keys at rest (keys come from the environment, not the database).

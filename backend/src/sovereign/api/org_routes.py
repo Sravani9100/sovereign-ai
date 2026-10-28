@@ -6,7 +6,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
 from sovereign import audit
-from sovereign.api.deps import AdminDep, ApiError, CtxDep, not_found
+from sovereign.api.deps import AdminDep, AdminWriteDep, ApiError, CtxDep, not_found
 from sovereign.api.schemas import MemberIn, MemberOut, MemberPatch, TeamIn, TeamOut
 from sovereign.auth import hash_password
 from sovereign.models import Membership, MembershipStatus, Role, Team, TeamMember, User
@@ -48,7 +48,7 @@ def list_members(c: AdminDep) -> list[MemberOut]:
 
 
 @router.post("/members", status_code=201)
-def add_member(body: MemberIn, c: AdminDep) -> MemberOut:
+def add_member(body: MemberIn, c: AdminWriteDep) -> MemberOut:
     if body.role == Role.OWNER and c.principal.role != Role.OWNER:
         raise ApiError(403, "forbidden", "Only owners can add owners")
     session = c.session
@@ -84,7 +84,7 @@ def add_member(body: MemberIn, c: AdminDep) -> MemberOut:
 
 
 @router.patch("/members/{membership_id}")
-def update_member(membership_id: uuid.UUID, body: MemberPatch, c: AdminDep) -> MemberOut:
+def update_member(membership_id: uuid.UUID, body: MemberPatch, c: AdminWriteDep) -> MemberOut:
     session = c.session
     membership = session.get(Membership, membership_id)
     if membership is None or membership.organization_id != c.principal.organization_id:
@@ -129,7 +129,7 @@ def list_teams(c: CtxDep) -> list[TeamOut]:
 
 
 @router.post("/teams", status_code=201)
-def create_team(body: TeamIn, c: AdminDep) -> TeamOut:
+def create_team(body: TeamIn, c: AdminWriteDep) -> TeamOut:
     team = Team(organization_id=c.principal.organization_id, name=body.name)
     c.session.add(team)
     try:
@@ -160,7 +160,7 @@ def _team_and_member(c, team_id, membership_id) -> tuple[Team, Membership]:
 
 
 @router.put("/teams/{team_id}/members/{membership_id}", status_code=204)
-def add_team_member(team_id: uuid.UUID, membership_id: uuid.UUID, c: AdminDep) -> None:
+def add_team_member(team_id: uuid.UUID, membership_id: uuid.UUID, c: AdminWriteDep) -> None:
     team, membership = _team_and_member(c, team_id, membership_id)
     if c.session.get(TeamMember, (team.id, membership.id)) is None:
         c.session.add(
@@ -180,7 +180,7 @@ def add_team_member(team_id: uuid.UUID, membership_id: uuid.UUID, c: AdminDep) -
 
 
 @router.delete("/teams/{team_id}/members/{membership_id}", status_code=204)
-def remove_team_member(team_id: uuid.UUID, membership_id: uuid.UUID, c: AdminDep) -> None:
+def remove_team_member(team_id: uuid.UUID, membership_id: uuid.UUID, c: AdminWriteDep) -> None:
     team, membership = _team_and_member(c, team_id, membership_id)
     c.session.execute(
         delete(TeamMember).where(

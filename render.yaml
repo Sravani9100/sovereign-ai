@@ -1,0 +1,47 @@
+# Render Blueprint for the API: New > Blueprint > pick this repository.
+# Secrets (sync: false) are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: sovereign-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    region: frankfurt
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SOVEREIGN_JWT_SECRET
+        generateValue: true
+      - key: SOVEREIGN_COOKIE_SECURE
+        value: "true"
+      - key: SOVEREIGN_ANTHROPIC_MODEL
+        value: claude-haiku-5-5
+      # Public demo: shared accounts read-only, and a ceiling on model calls.
+      - key: SOVEREIGN_DEMO_READ_ONLY
+        value: "true"
+      - key: SOVEREIGN_CHAT_MESSAGES_PER_HOUR
+        value: "20"
+      - key: SOVEREIGN_DAILY_MESSAGE_LIMIT
+        value: "300"
+      # Uploads are disabled for demo accounts; documents are seeded from a workstation.
+      - key: SOVEREIGN_INLINE_INGESTION
+        value: "true"
+      # Email sign-in codes (e.g. Brevo: smtp-relay.brevo.com, port 587).
+      - key: SOVEREIGN_EMAIL_BACKEND
+        value: smtp
+      - key: SOVEREIGN_SMTP_HOST
+        sync: false
+      - key: SOVEREIGN_SMTP_PORT
+        value: "587"
+      - key: SOVEREIGN_SMTP_USERNAME
+        sync: false
+      - key: SOVEREIGN_SMTP_PASSWORD
+        sync: false
+      - key: SOVEREIGN_EMAIL_FROM
+        sync: false

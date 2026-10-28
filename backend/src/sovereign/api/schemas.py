@@ -48,6 +48,7 @@ class MeOut(Out):
     id: uuid.UUID
     email: str
     display_name: str
+    read_only: bool = False  # a shared demo account while demo mode is on
     organizations: list[OrgMembershipOut]
 
 

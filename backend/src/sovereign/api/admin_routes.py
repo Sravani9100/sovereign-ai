@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select, update
 
 from sovereign import audit
-from sovereign.api.deps import AdminDep, CtxDep, not_found
+from sovereign.api.deps import AdminDep, AdminWriteDep, CtxDep, not_found
 from sovereign.api.schemas import AuditEventOut, ModelProfileOut, ModelProfilePatch
 from sovereign.models import AuditEvent, ModelProfile, User
 
@@ -35,7 +35,7 @@ def list_model_profiles(c: CtxDep) -> list[ModelProfileOut]:
 
 @router.patch("/model-profiles/{profile_id}")
 def update_model_profile(
-    profile_id: uuid.UUID, body: ModelProfilePatch, c: AdminDep
+    profile_id: uuid.UUID, body: ModelProfilePatch, c: AdminWriteDep
 ) -> ModelProfileOut:
     profile = c.session.get(ModelProfile, profile_id)
     if profile is None or profile.organization_id != c.principal.organization_id:

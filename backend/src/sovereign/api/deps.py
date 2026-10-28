@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sovereign.ai.embeddings import Embedder
 from sovereign.ai.gateway import Gateway
 from sovereign.auth import COOKIE_NAME, read_token
-from sovereign.config import Settings
+from sovereign.config import Settings, is_demo_account
 from sovereign.db import tenant_session
 from sovereign.mail import Mailer
 from sovereign.permissions import Principal, load_principal
@@ -76,7 +76,28 @@ def admin_ctx(c: Annotated[Ctx, Depends(ctx)]) -> Ctx:
     return c
 
 
+def _require_writable(c: Ctx) -> Ctx:
+    if is_demo_account(c.principal.email, c.svc.settings):
+        raise ApiError(
+            403,
+            "demo_read_only",
+            "This is a shared demo account: you can chat, but not change data",
+        )
+    return c
+
+
+def write_ctx(c: Annotated[Ctx, Depends(ctx)]) -> Ctx:
+    return _require_writable(c)
+
+
+def admin_write_ctx(c: Annotated[Ctx, Depends(admin_ctx)]) -> Ctx:
+    return _require_writable(c)
+
+
 CtxDep = Annotated[Ctx, Depends(ctx)]
 AdminDep = Annotated[Ctx, Depends(admin_ctx)]
+# For changes: also refused for shared demo accounts when demo_read_only is on.
+WriteDep = Annotated[Ctx, Depends(write_ctx)]
+AdminWriteDep = Annotated[Ctx, Depends(admin_write_ctx)]
 ServicesDep = Annotated[Services, Depends(services)]
 UserIdDep = Annotated[uuid.UUID, Depends(current_user_id)]

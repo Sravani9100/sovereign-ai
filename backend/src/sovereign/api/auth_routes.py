@@ -13,6 +13,7 @@ from sovereign.api.schemas import (
     OrgMembershipOut,
 )
 from sovereign.auth import COOKIE_NAME, issue_token, verify_password
+from sovereign.config import is_demo_account
 from sovereign.db import system_session
 from sovereign.models import Membership, MembershipStatus, Organization, User
 from sovereign.organizations import create_organization
@@ -20,7 +21,7 @@ from sovereign.organizations import create_organization
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 
-def _me(session, user: User) -> MeOut:
+def _me(session, user: User, settings) -> MeOut:
     rows = session.execute(
         select(Membership, Organization)
         .join(Organization, Organization.id == Membership.organization_id)
@@ -31,6 +32,7 @@ def _me(session, user: User) -> MeOut:
         id=user.id,
         email=user.email,
         display_name=user.display_name,
+        read_only=is_demo_account(user.email, settings),
         organizations=[
             OrgMembershipOut(organization_id=o.id, name=o.name, slug=o.slug, role=m.role)
             for m, o in rows
@@ -68,7 +70,7 @@ def login(body: LoginIn, response: Response, svc: ServicesDep) -> MeOut:
             raise ApiError(401, "invalid_credentials", "Email or password is incorrect")
         audit.record(session, "auth.login", actor_user_id=user.id, method="password")
         session.commit()
-        me = _me(session, user)
+        me = _me(session, user, svc.settings)
     _start_session(response, user, svc)
     return me
 
@@ -119,7 +121,7 @@ def verify_code(body: CodeVerifyIn, response: Response, svc: ServicesDep) -> MeO
             raise ApiError(401, "invalid_code", "That code is wrong or has expired")
         audit.record(session, "auth.login", actor_user_id=user.id, method="email_code")
         session.commit()
-        me = _me(session, user)
+        me = _me(session, user, svc.settings)
     _start_session(response, user, svc)
     return me
 
@@ -135,7 +137,7 @@ def me(user_id: UserIdDep, svc: ServicesDep) -> MeOut:
         user = session.get(User, user_id)
         if user is None:
             raise ApiError(401, "unauthenticated", "Sign in to continue")
-        return _me(session, user)
+        return _me(session, user, svc.settings)
 
 
 @router.post("/organizations", status_code=201)
@@ -144,6 +146,8 @@ def create_org(body: OrganizationIn, user_id: UserIdDep, svc: ServicesDep) -> Or
         user = session.get(User, user_id)
         if user is None:
             raise ApiError(401, "unauthenticated", "Sign in to continue")
+        if is_demo_account(user.email, svc.settings):
+            raise ApiError(403, "demo_read_only", "Demo accounts can't create organizations")
         try:
             org, membership = create_organization(
                 session, svc.settings, name=body.name, slug=body.slug, owner=user

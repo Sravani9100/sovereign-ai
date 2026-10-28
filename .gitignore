@@ -11,3 +11,4 @@ node_modules/
 .next/
 evals/results/run-*.json
 .neon
+.env.production

@@ -36,6 +36,7 @@ class Principal:
     organization_id: uuid.UUID
     role: Role
     team_ids: frozenset[uuid.UUID]
+    email: str = ""
 
     @property
     def is_admin(self) -> bool:
@@ -63,6 +64,7 @@ def load_principal(session: Session, user_id: uuid.UUID, org_id: uuid.UUID) -> P
         organization_id=org_id,
         role=membership.role,
         team_ids=frozenset(team_ids),
+        email=membership.user.email,
     )
 
 
